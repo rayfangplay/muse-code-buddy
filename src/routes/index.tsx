@@ -5,16 +5,17 @@ import { NBAScores } from "@/components/NBAScores";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Courtside Notes — Notebook with live NBA scores" },
+      { title: "Courtside Notes — Tactical notebook with live NBA scores" },
       {
         name: "description",
         content:
-          "A simple notebook app with live NBA scores on the side, auto-refreshing every 10 minutes.",
+          "A hardwood-and-neon notebook for basketball minds. Write notes on the left, watch live NBA scores and standings on the right.",
       },
       { property: "og:title", content: "Courtside Notes" },
       {
         property: "og:description",
-        content: "Notebook with live NBA scores on the side.",
+        content:
+          "Tactical notebook with live NBA scores, favorite-team pinning, and standings.",
       },
     ],
   }),
@@ -23,11 +24,12 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      <main className="min-w-0 flex-1">
-        <Notebook />
-      </main>
-      <div className="hidden w-80 shrink-0 md:block">
+    <div
+      className="flex h-screen w-full overflow-hidden bg-[var(--color-ink)] text-white"
+      style={{ fontFamily: "Barlow, sans-serif" }}
+    >
+      <Notebook />
+      <div className="hidden w-[380px] shrink-0 lg:block">
         <NBAScores />
       </div>
     </div>

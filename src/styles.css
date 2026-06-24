@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-display: "Bebas Neue", "Impact", sans-serif;
+  --font-sans: "Barlow", "Inter", sans-serif;
+  --color-ink: #0d0b08;
+  --color-panel: #1a1410;
+  --color-amber: #d97706;
+  --color-cyan: #22d3ee;
+}
+
+
 /*
  * Design system definition.
  *
