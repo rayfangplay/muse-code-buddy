@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Save } from "lucide-react";
 
 type Note = {
   id: string;
   title: string;
   body: string;
+  tag: string;
   updatedAt: number;
 };
 
-const STORAGE_KEY = "notebook.notes.v1";
+const STORAGE_KEY = "notebook.notes.v2";
 
 function loadNotes(): Note[] {
   if (typeof window === "undefined") return [];
@@ -28,6 +26,7 @@ export function Notebook() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
     const initial = loadNotes();
@@ -49,108 +48,186 @@ export function Notebook() {
   const createNote = () => {
     const n: Note = {
       id: crypto.randomUUID(),
-      title: "Untitled",
+      title: "UNTITLED ENTRY",
       body: "",
+      tag: "Scouting Report",
       updatedAt: Date.now(),
     };
-    setNotes((prev) => [n, ...prev]);
+    setNotes((p) => [n, ...p]);
     setActiveId(n.id);
   };
 
   const updateActive = (patch: Partial<Note>) => {
     if (!active) return;
-    setNotes((prev) =>
-      prev.map((n) =>
+    setNotes((p) =>
+      p.map((n) =>
         n.id === active.id ? { ...n, ...patch, updatedAt: Date.now() } : n,
       ),
     );
   };
 
-  const deleteNote = (id: string) => {
-    setNotes((prev) => {
-      const next = prev.filter((n) => n.id !== id);
-      if (id === activeId) setActiveId(next[0]?.id ?? null);
+  const deleteActive = () => {
+    if (!active) return;
+    setNotes((p) => {
+      const next = p.filter((n) => n.id !== active.id);
+      setActiveId(next[0]?.id ?? null);
       return next;
     });
   };
 
+  const flashSave = () => {
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1200);
+  };
+
   const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
+  const wordCount = active ? active.body.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (
-    <div className="flex h-full min-h-0 w-full">
-      <div className="flex w-64 flex-col border-r bg-muted/30">
-        <div className="flex items-center justify-between border-b px-3 py-3">
-          <h1 className="text-sm font-semibold tracking-tight">Notes</h1>
-          <Button size="icon" variant="ghost" onClick={createNote} aria-label="New note">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {sorted.length === 0 && (
-            <p className="px-3 py-4 text-xs text-muted-foreground">
-              No notes yet. Click + to create one.
-            </p>
-          )}
-          {sorted.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => setActiveId(n.id)}
-              className={`group flex w-full items-start justify-between gap-2 border-b px-3 py-2 text-left hover:bg-accent ${
-                n.id === activeId ? "bg-accent" : ""
-              }`}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">
-                  {n.title || "Untitled"}
-                </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {n.body.split("\n")[0] || "No content"}
-                </div>
-              </div>
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteNote(n.id);
-                }}
-                className="opacity-0 transition group-hover:opacity-100"
-                aria-label="Delete note"
-              >
-                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        {active ? (
-          <>
-            <div className="border-b px-6 py-4">
-              <Input
-                value={active.title}
-                onChange={(e) => updateActive({ title: e.target.value })}
-                placeholder="Title"
-                className="border-0 px-0 text-2xl font-semibold shadow-none focus-visible:ring-0"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Updated {new Date(active.updatedAt).toLocaleString()}
-              </p>
-            </div>
-            <Textarea
-              value={active.body}
-              onChange={(e) => updateActive({ body: e.target.value })}
-              placeholder="Start writing…"
-              className="flex-1 resize-none rounded-none border-0 px-6 py-4 text-base shadow-none focus-visible:ring-0"
-            />
-          </>
-        ) : (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Create a note to get started.
+    <main className="flex h-full min-w-0 flex-1 flex-col border-r border-[var(--color-amber)]/20 bg-[var(--color-ink)] text-white">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--color-panel)] p-6 lg:p-8">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="block h-[2px] w-6 bg-[var(--color-amber)]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--color-amber)]">
+              {active?.tag ?? "Project: Season Analysis"}
+            </span>
           </div>
-        )}
+          {active ? (
+            <input
+              value={active.title}
+              onChange={(e) =>
+                updateActive({ title: e.target.value.toUpperCase() })
+              }
+              className="w-full bg-transparent font-display text-4xl uppercase leading-none tracking-tight text-white outline-none lg:text-6xl"
+            />
+          ) : (
+            <h1 className="font-display text-4xl uppercase leading-none tracking-tight text-white/30 lg:text-6xl">
+              NO ENTRY SELECTED
+            </h1>
+          )}
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={createNote}
+            className="flex items-center gap-2 border border-[var(--color-cyan)]/40 bg-[var(--color-panel)] px-3 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-cyan)] transition hover:bg-[var(--color-cyan)] hover:text-[var(--color-ink)]"
+          >
+            <Plus className="h-3 w-3" /> New
+          </button>
+          <button
+            onClick={flashSave}
+            disabled={!active}
+            className="flex items-center gap-2 border border-[var(--color-amber)]/40 bg-[var(--color-panel)] px-3 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-amber)] transition hover:bg-[var(--color-amber)] hover:text-[var(--color-ink)] disabled:opacity-30"
+          >
+            <Save className="h-3 w-3" />
+            {savedFlash ? "Saved" : "Save Draft"}
+          </button>
+          <button
+            onClick={deleteActive}
+            disabled={!active}
+            className="flex items-center gap-2 border border-white/10 bg-[var(--color-panel)] px-3 py-2 text-xs font-bold uppercase tracking-widest text-white/40 transition hover:border-red-500/60 hover:text-red-400 disabled:opacity-30"
+            aria-label="Delete"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      </header>
+
+      {/* Body */}
+      <div className="flex min-h-0 flex-1">
+        {/* Entry list */}
+        <div className="hidden w-64 shrink-0 flex-col border-r border-[var(--color-panel)] md:flex">
+          <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+            ENTRIES // {sorted.length.toString().padStart(2, "0")}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {sorted.length === 0 && (
+              <p className="px-4 py-3 text-[11px] uppercase tracking-widest text-white/20">
+                No entries. Hit NEW.
+              </p>
+            )}
+            {sorted.map((n) => {
+              const isActive = n.id === activeId;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => setActiveId(n.id)}
+                  className={`group block w-full border-l-2 px-4 py-3 text-left transition ${
+                    isActive
+                      ? "border-[var(--color-amber)] bg-[var(--color-panel)]"
+                      : "border-transparent hover:border-[var(--color-cyan)]/40 hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <div className="truncate font-display text-base uppercase tracking-wide text-white">
+                    {n.title || "UNTITLED"}
+                  </div>
+                  <div className="mt-0.5 truncate text-[11px] text-white/40">
+                    {n.body.split("\n")[0] || "Empty draft"}
+                  </div>
+                  <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.25em] text-white/30">
+                    {new Date(n.updatedAt).toLocaleDateString()}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Editor */}
+        <section className="relative flex min-w-0 flex-1 flex-col p-6 lg:p-12">
+          {active ? (
+            <>
+              <div className="mb-6 flex items-center gap-4 text-base font-bold tracking-tighter text-[var(--color-cyan)] lg:text-xl">
+                <span className="block h-[2px] w-8 bg-[var(--color-cyan)]" />
+                01. LINEUP EFFICIENCY
+              </div>
+
+              <div className="mb-6 border-l-4 border-[var(--color-cyan)] bg-[var(--color-panel)] p-5">
+                <input
+                  value={active.tag}
+                  onChange={(e) => updateActive({ tag: e.target.value })}
+                  className="w-full bg-transparent text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--color-cyan)] outline-none"
+                  placeholder="TAG"
+                />
+              </div>
+
+              <textarea
+                value={active.body}
+                onChange={(e) => updateActive({ body: e.target.value })}
+                placeholder="Continue typing tactical notes..."
+                className="min-h-[300px] flex-1 resize-none bg-transparent text-lg leading-relaxed text-gray-300 placeholder-gray-700 outline-none"
+              />
+
+              {/* Status bar */}
+              <div className="mt-4 flex items-center justify-between border-t border-[var(--color-panel)] pt-4 text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                <span>WORDS: {wordCount.toString().padStart(4, "0")}</span>
+                <span>CHARS: {active.body.length.toString().padStart(4, "0")}</span>
+                <span className="text-[var(--color-amber)]/60">
+                  AUTOSAVED · {new Date(active.updatedAt).toLocaleTimeString()}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center">
+              <button
+                onClick={createNote}
+                className="border border-[var(--color-amber)]/40 bg-[var(--color-panel)] px-6 py-3 font-display text-xl uppercase tracking-widest text-[var(--color-amber)] transition hover:bg-[var(--color-amber)] hover:text-[var(--color-ink)]"
+              >
+                + Open New Entry
+              </button>
+            </div>
+          )}
+
+          {/* Background decorative number */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-4 right-6 font-display text-[120px] leading-none text-white/[0.04]"
+          >
+            NBA.2024
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
