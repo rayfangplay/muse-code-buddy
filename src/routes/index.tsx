@@ -1,29 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Notebook } from "@/components/Notebook";
+import { NBAScores } from "@/components/NBAScores";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Courtside Notes — Notebook with live NBA scores" },
+      {
+        name: "description",
+        content:
+          "A simple notebook app with live NBA scores on the side, auto-refreshing every 10 minutes.",
+      },
+      { property: "og:title", content: "Courtside Notes" },
+      {
+        property: "og:description",
+        content: "Notebook with live NBA scores on the side.",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <main className="min-w-0 flex-1">
+        <Notebook />
+      </main>
+      <div className="hidden w-80 shrink-0 md:block">
+        <NBAScores />
+      </div>
     </div>
   );
 }
